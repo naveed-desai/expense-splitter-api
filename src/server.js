@@ -1,15 +1,15 @@
 const app = require('./app');
-const { connectDB } = require('./config/database');
+const { connectDB } = require('./connections/mongodb');
+const envConfig = require('./config/env.config');
 
-const PORT = process.env.PORT || 5000;
+const PORT = envConfig.port;
 
-/**
- * Start Server Procedure:
- * 1. Connect to MySQL Database & sync Sequelize models
- * 2. Bind Express app to designated port
- */
 const startServer = async () => {
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (err) {
+    console.log('Server starting without active MongoDB connection.');
+  }
 
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

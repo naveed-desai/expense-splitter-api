@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Group Expense Splitter Backend - Phase 1 Setup",
+  "description": "Group Expense Splitter Backend",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -12,8 +12,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "joi": "^17.13.3",
-    "mysql2": "^3.12.0",
-    "sequelize": "^6.37.5"
+    "mongoose": "^9.9.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
