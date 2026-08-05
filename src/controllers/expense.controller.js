@@ -3,7 +3,7 @@ const { expenseService } = require('../services');
 const addExpense = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const { description, amount, paidByMemberId, paidBy, category, date } = req.body;
+    const { description, amount, paidByMemberId, paidBy, splitMemberIds, date } = req.body;
 
     if (typeof description !== 'string' || !description.trim()) {
       return res.status(400).json({
@@ -33,7 +33,7 @@ const addExpense = async (req, res, next) => {
       amount,
       paidByMemberId,
       paidBy,
-      category,
+      splitMemberIds,
       date
     });
 

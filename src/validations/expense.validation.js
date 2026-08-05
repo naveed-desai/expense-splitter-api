@@ -13,7 +13,7 @@ const addExpense = {
     }),
     paidByMemberId: Joi.string().hex().length(24).allow('', null).optional(),
     paidBy: Joi.string().trim().allow('', null).optional(),
-    category: Joi.string().trim().allow('', null).optional(),
+    splitMemberIds: Joi.array().items(Joi.string().allow('', null)).optional(),
     date: Joi.string().trim().allow('', null).optional()
   })
 };

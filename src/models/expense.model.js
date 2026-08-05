@@ -1,5 +1,34 @@
 const mongoose = require('mongoose');
 
+const splitSubSchema = new mongoose.Schema({
+  memberId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
+  memberName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  isSettled: {
+    type: Boolean,
+    default: false
+  }
+}, {
+  timestamps: false
+});
+
+splitSubSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+  }
+});
+
 const expenseSchema = new mongoose.Schema({
   groupId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,10 +58,7 @@ const expenseSchema = new mongoose.Schema({
     type: String,
     default: () => new Date().toISOString().split('T')[0]
   },
-  category: {
-    type: String,
-    default: 'General'
-  }
+  splits: [splitSubSchema]
 }, {
   timestamps: true
 });

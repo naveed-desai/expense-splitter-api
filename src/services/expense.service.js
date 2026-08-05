@@ -1,6 +1,7 @@
-const { Expense, Group, ExpenseSplit } = require('../models');
+const { Expense, Group } = require('../models');
 
-const addExpense = async ({ groupId, description, amount, paidByMemberId, paidBy, category, date }) => {
+// Add a new expense and calculate member splits for selected members
+const addExpense = async ({ groupId, description, amount, paidByMemberId, paidBy, splitMemberIds, date }) => {
   const group = await Group.findById(groupId);
   if (!group) {
     const error = new Error('Group not found');
@@ -28,38 +29,50 @@ const addExpense = async ({ groupId, description, amount, paidByMemberId, paidBy
     }
   }
 
+  // Filter members participating in this split
+  let targetMembers = group.members || [];
+  if (splitMemberIds && Array.isArray(splitMemberIds) && splitMemberIds.length > 0) {
+    const splitIdsStrings = splitMemberIds.map((id) => String(id));
+    targetMembers = group.members.filter((m) =>
+      splitIdsStrings.includes(String(m._id)) || (m.userId && splitIdsStrings.includes(String(m.userId)))
+    );
+  }
+
+  if (targetMembers.length === 0) {
+    targetMembers = group.members || [];
+  }
+
+  let splits = [];
+  if (targetMembers.length > 0) {
+    const totalPaisa = Math.round(numericAmount * 100);
+    const basePaisa = Math.floor(totalPaisa / targetMembers.length);
+    const remainderPaisa = totalPaisa - (basePaisa * targetMembers.length);
+
+    splits = targetMembers.map((member, index) => {
+      const memberPaisa = index === 0 ? basePaisa + remainderPaisa : basePaisa;
+      return {
+        memberId: member._id,
+        memberName: member.name,
+        amount: parseFloat((memberPaisa / 100).toFixed(2)),
+        isSettled: false
+      };
+    });
+  }
+
   const createdExpense = await Expense.create({
     groupId: group._id,
     description: description.trim(),
     amount: numericAmount,
     paidByMemberId: payerMemberId,
     paidBy: payerName ? payerName.trim() : 'Unknown',
-    category: category ? category.trim() : 'General',
-    date: date || new Date().toISOString().split('T')[0]
+    date: date || new Date().toISOString().split('T')[0],
+    splits
   });
-
-  if (group.members && group.members.length > 0) {
-    const totalPaisa = Math.round(numericAmount * 100);
-    const basePaisa = Math.floor(totalPaisa / group.members.length);
-    const remainderPaisa = totalPaisa - (basePaisa * group.members.length);
-
-    const splitRecords = group.members.map((member, index) => {
-      const memberPaisa = index === 0 ? basePaisa + remainderPaisa : basePaisa;
-      return {
-        expenseId: createdExpense._id,
-        memberId: member._id,
-        amount: parseFloat((memberPaisa / 100).toFixed(2)),
-        isSettled: false
-      };
-    });
-
-    await ExpenseSplit.insertMany(splitRecords);
-  }
 
   return createdExpense;
 };
 
-
+// Record a settlement payment directly into Expenses collection
 const recordSettlement = async ({ groupId, payerMemberId, payeeMemberId, payerName, payeeName, amount }) => {
   const group = await Group.findById(groupId);
   if (!group) {
@@ -108,13 +121,14 @@ const recordSettlement = async ({ groupId, payerMemberId, payeeMemberId, payerNa
     paidByMemberId: resolvedPayerMemberId,
     paidBy: finalPayerName.trim(),
     category: 'Settlement',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    splits: []
   });
 
   return settlementExpense;
 };
 
-
+// Get all expenses logged in a group
 const getGroupExpenses = async (groupId) => {
   const expenses = await Expense.find({ groupId }).sort({ createdAt: -1 });
   return expenses;
